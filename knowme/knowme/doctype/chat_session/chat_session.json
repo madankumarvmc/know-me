@@ -1,0 +1,83 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2025-02-15 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "tenant",
+  "session_id",
+  "message_count",
+  "conversation_log",
+  "visitor_ip",
+  "started_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "tenant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Tenant",
+   "options": "KnowMe Config",
+   "reqd": 1
+  },
+  {
+   "fieldname": "session_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Session ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "message_count",
+   "fieldtype": "Int",
+   "default": "0",
+   "in_list_view": 1,
+   "label": "Message Count"
+  },
+  {
+   "fieldname": "conversation_log",
+   "fieldtype": "JSON",
+   "label": "Conversation Log"
+  },
+  {
+   "fieldname": "visitor_ip",
+   "fieldtype": "Data",
+   "label": "Visitor IP"
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "default": "Now",
+   "in_list_view": 1,
+   "label": "Started At"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2025-02-15 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "KnowMe",
+ "name": "Chat Session",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

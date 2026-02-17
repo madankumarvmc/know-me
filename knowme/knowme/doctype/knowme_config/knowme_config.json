@@ -1,0 +1,145 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:tenant_name",
+ "creation": "2025-02-15 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "tenant_name",
+  "enabled",
+  "api_token",
+  "section_llm",
+  "llm_provider",
+  "llm_api_key",
+  "llm_model",
+  "section_persona",
+  "persona_prompt",
+  "greeting_message",
+  "section_widget",
+  "accent_color",
+  "max_messages",
+  "section_knowledge",
+  "knowledge_spreadsheet_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "tenant_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Tenant Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "api_token",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "API Token",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "section_llm",
+   "fieldtype": "Section Break",
+   "label": "LLM Configuration"
+  },
+  {
+   "default": "gemini",
+   "fieldname": "llm_provider",
+   "fieldtype": "Select",
+   "label": "LLM Provider",
+   "options": "gemini\nclaude\nopenai",
+   "reqd": 1
+  },
+  {
+   "fieldname": "llm_api_key",
+   "fieldtype": "Password",
+   "label": "LLM API Key",
+   "reqd": 1
+  },
+  {
+   "default": "gemini-2.0-flash",
+   "fieldname": "llm_model",
+   "fieldtype": "Data",
+   "label": "LLM Model"
+  },
+  {
+   "fieldname": "section_persona",
+   "fieldtype": "Section Break",
+   "label": "Persona Settings"
+  },
+  {
+   "fieldname": "persona_prompt",
+   "fieldtype": "Small Text",
+   "label": "Persona Prompt"
+  },
+  {
+   "default": "Hey there! I am an AI assistant that knows all about this person. What would you like to know?",
+   "fieldname": "greeting_message",
+   "fieldtype": "Small Text",
+   "label": "Greeting Message"
+  },
+  {
+   "fieldname": "section_widget",
+   "fieldtype": "Section Break",
+   "label": "Widget Settings"
+  },
+  {
+   "default": "#FF6B6B",
+   "fieldname": "accent_color",
+   "fieldtype": "Color",
+   "label": "Accent Color"
+  },
+  {
+   "default": "18",
+   "fieldname": "max_messages",
+   "fieldtype": "Int",
+   "label": "Max Messages Per Session"
+  },
+  {
+   "fieldname": "section_knowledge",
+   "fieldtype": "Section Break",
+   "label": "Knowledge Pipeline (Phase 2)"
+  },
+  {
+   "fieldname": "knowledge_spreadsheet_url",
+   "fieldtype": "Data",
+   "label": "Knowledge Spreadsheet URL",
+   "description": "Google Spreadsheet CSV URL for automated knowledge ingestion"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2025-02-15 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "KnowMe",
+ "name": "KnowMe Config",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
