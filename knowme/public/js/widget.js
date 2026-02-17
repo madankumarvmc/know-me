@@ -1,15 +1,20 @@
 (function () {
   "use strict";
 
-  // ── Config from script tag ──────────────────────────────────────
+  // ── Config from script tag (defaults) ──────────────────────────
   const scriptTag = document.currentScript;
   const CONFIG = {
     token: scriptTag?.getAttribute("data-token") || "",
     host: (scriptTag?.getAttribute("data-host") || "").replace(/\/$/, ""),
     accent: scriptTag?.getAttribute("data-accent") || "#FF6B6B",
+    botName: "Know Me",
+    greetingMessage: "",
+    initialChips: [],
+    maxMessages: 18,
   };
 
   const API_URL = CONFIG.host + "/api/method/knowme.api.chat.handle";
+  const CONFIG_URL = CONFIG.host + "/api/method/knowme.api.config.get_widget_config";
 
   // ── Session State ───────────────────────────────────────────────
   const state = {
@@ -24,6 +29,32 @@
     ended: false,
   };
 
+  // ── Fetch tenant config from server ────────────────────────────
+  function fetchConfig() {
+    return fetch(CONFIG_URL + "?token=" + encodeURIComponent(CONFIG.token), {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("Config fetch failed: " + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var cfg = data.message || data;
+        if (cfg.accentColor) CONFIG.accent = cfg.accentColor;
+        if (cfg.botName) CONFIG.botName = cfg.botName;
+        if (cfg.greetingMessage) CONFIG.greetingMessage = cfg.greetingMessage;
+        if (cfg.maxMessages) CONFIG.maxMessages = cfg.maxMessages;
+        if (cfg.suggestedChips && cfg.suggestedChips.length > 0) {
+          CONFIG.initialChips = cfg.suggestedChips;
+        }
+        state.maxMessages = CONFIG.maxMessages;
+      })
+      .catch(function (err) {
+        console.warn("KnowMe: could not fetch config, using defaults", err);
+      });
+  }
+
   // ── Dark mode detection ─────────────────────────────────────────
   function isDarkMode() {
     return (
@@ -35,18 +66,22 @@
 
   // ── Color helpers ───────────────────────────────────────────────
   function hexToRgb(hex) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return { r, g, b };
+    var clean = hex.replace("#", "");
+    if (clean.length === 3) {
+      clean = clean[0]+clean[0]+clean[1]+clean[1]+clean[2]+clean[2];
+    }
+    var r = parseInt(clean.slice(0, 2), 16);
+    var g = parseInt(clean.slice(2, 4), 16);
+    var b = parseInt(clean.slice(4, 6), 16);
+    return { r: r, g: g, b: b };
   }
 
   // ── Inject Styles ──────────────────────────────────────────────
   function injectStyles() {
-    const accent = CONFIG.accent;
-    const rgb = hexToRgb(accent);
+    var accent = CONFIG.accent;
+    var rgb = hexToRgb(accent);
 
-    const style = document.createElement("style");
+    var style = document.createElement("style");
     style.textContent = `
       /* ── KnowMe Widget Styles ── */
       .km-orb {
@@ -426,29 +461,28 @@
   // ── Create DOM ─────────────────────────────────────────────────
   function createWidget() {
     // Orb
-    const orb = document.createElement("div");
+    var orb = document.createElement("div");
     orb.className = "km-orb";
-    orb.innerHTML = `<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/></svg>`;
+    orb.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/></svg>';
     orb.addEventListener("click", togglePanel);
     document.body.appendChild(orb);
 
     // Panel
-    const panel = document.createElement("div");
+    var panel = document.createElement("div");
     panel.className = "km-panel" + (isDarkMode() ? " km-dark" : "");
-    panel.innerHTML = `
-      <div class="km-header">
-        <div class="km-header-avatar">💬</div>
-        <div class="km-header-title">Know Me</div>
-        <button class="km-header-close" aria-label="Close">&times;</button>
-      </div>
-      <div class="km-messages"></div>
-      <div class="km-chips"></div>
-      <div class="km-input-area">
-        <input class="km-input" type="text" placeholder="Or ask me anything..." maxlength="300" />
-        <button class="km-send-btn" aria-label="Send">&#10148;</button>
-      </div>
-      <div class="km-footer"></div>
-    `;
+    panel.innerHTML =
+      '<div class="km-header">' +
+        '<div class="km-header-avatar">💬</div>' +
+        '<div class="km-header-title">' + escapeHtml(CONFIG.botName) + '</div>' +
+        '<button class="km-header-close" aria-label="Close">&times;</button>' +
+      '</div>' +
+      '<div class="km-messages"></div>' +
+      '<div class="km-chips"></div>' +
+      '<div class="km-input-area">' +
+        '<input class="km-input" type="text" placeholder="Or ask me anything..." maxlength="300" />' +
+        '<button class="km-send-btn" aria-label="Send">&#10148;</button>' +
+      '</div>' +
+      '<div class="km-footer"></div>';
     document.body.appendChild(panel);
 
     // Event listeners
@@ -462,7 +496,7 @@
     });
 
     // Dark mode observer
-    const observer = new MutationObserver(function () {
+    var observer = new MutationObserver(function () {
       panel.classList.toggle("km-dark", isDarkMode());
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
@@ -470,14 +504,14 @@
       panel.classList.toggle("km-dark", isDarkMode());
     });
 
-    return { orb, panel };
+    return { orb: orb, panel: panel };
   }
 
   // ── Panel Toggle ───────────────────────────────────────────────
   function togglePanel() {
     state.open = !state.open;
-    const orb = document.querySelector(".km-orb");
-    const panel = document.querySelector(".km-panel");
+    var orb = document.querySelector(".km-orb");
+    var panel = document.querySelector(".km-panel");
 
     orb.classList.toggle("km-open", state.open);
     panel.classList.toggle("km-visible", state.open);
@@ -489,20 +523,23 @@
 
   // ── Greeting ───────────────────────────────────────────────────
   function showGreeting() {
-    const greeting = {
-      text: "Hey there! 👋 I'm an AI that knows all about the person behind this site. What would you like to know?",
-      chips: [
-        { id: "about", text: "Who are you?", icon: "👤" },
-        { id: "skills", text: "What are your skills?", icon: "🛠️" },
-        { id: "blog", text: "Show me your writing", icon: "✍️" },
-        { id: "interests", text: "What are your interests?", icon: "🎯" },
-      ],
-      cards: [],
-      meta: { topic: "greeting" },
-    };
+    // Use server-provided greeting and chips, or fall back to defaults
+    var greetingText = CONFIG.greetingMessage ||
+      "Hey there! 👋 I'm an AI that knows all about the person behind this site. What would you like to know?";
 
-    addAIMessage(greeting.text);
-    renderChips(greeting.chips);
+    var defaultChips = [
+      { id: "about", text: "Who are you?", icon: "👤" },
+      { id: "skills", text: "What are your skills?", icon: "🛠️" },
+      { id: "blog", text: "Show me your writing", icon: "✍️" },
+      { id: "interests", text: "What are your interests?", icon: "🎯" },
+    ];
+
+    var chips = (CONFIG.initialChips && CONFIG.initialChips.length > 0)
+      ? CONFIG.initialChips
+      : defaultChips;
+
+    addAIMessage(greetingText);
+    renderChips(chips);
     updateFooter();
   }
 
@@ -511,8 +548,8 @@
     state.messages.push({ role: "user", content: text });
     state.conversationHistory.push({ role: "user", content: text });
 
-    const container = document.querySelector(".km-messages");
-    const msg = document.createElement("div");
+    var container = document.querySelector(".km-messages");
+    var msg = document.createElement("div");
     msg.className = "km-msg km-msg-user";
     msg.textContent = text;
     container.appendChild(msg);
@@ -523,8 +560,8 @@
     state.messages.push({ role: "ai", content: text });
     state.conversationHistory.push({ role: "assistant", content: text });
 
-    const container = document.querySelector(".km-messages");
-    const msg = document.createElement("div");
+    var container = document.querySelector(".km-messages");
+    var msg = document.createElement("div");
     msg.className = "km-msg km-msg-ai";
     container.appendChild(msg);
 
@@ -539,9 +576,9 @@
 
   // ── Typewriter ─────────────────────────────────────────────────
   function typewriter(el, html, onDone) {
-    let i = 0;
-    let output = "";
-    let inTag = false;
+    var i = 0;
+    var output = "";
+    var inTag = false;
 
     function tick() {
       if (i >= html.length) {
@@ -550,11 +587,11 @@
         return;
       }
 
-      const ch = html[i];
+      var ch = html[i];
       if (ch === "<") inTag = true;
       if (inTag) {
         // Process entire tag at once
-        const tagEnd = html.indexOf(">", i);
+        var tagEnd = html.indexOf(">", i);
         if (tagEnd !== -1) {
           output += html.slice(i, tagEnd + 1);
           i = tagEnd + 1;
@@ -579,18 +616,17 @@
   // ── Cards ──────────────────────────────────────────────────────
   function renderCards(parentEl, cards) {
     cards.forEach(function (card) {
-      const cardEl = document.createElement("div");
+      var cardEl = document.createElement("div");
       cardEl.className = "km-card";
 
-      const icon = card.type === "blog_post" ? "📝" : "📌";
-      cardEl.innerHTML = `
-        <div class="km-card-icon">${icon}</div>
-        <div class="km-card-content">
-          <div class="km-card-title">${escapeHtml(card.title || "")}</div>
-          <div class="km-card-type">${escapeHtml(card.type || "content")}</div>
-        </div>
-        <div class="km-card-arrow">›</div>
-      `;
+      var icon = card.type === "blog_post" ? "📝" : "📌";
+      cardEl.innerHTML =
+        '<div class="km-card-icon">' + icon + '</div>' +
+        '<div class="km-card-content">' +
+          '<div class="km-card-title">' + escapeHtml(card.title || "") + '</div>' +
+          '<div class="km-card-type">' + escapeHtml(card.type || "content") + '</div>' +
+        '</div>' +
+        '<div class="km-card-arrow">›</div>';
 
       if (card.slug) {
         cardEl.addEventListener("click", function () {
@@ -604,12 +640,12 @@
 
   // ── Chips ──────────────────────────────────────────────────────
   function renderChips(chips) {
-    const container = document.querySelector(".km-chips");
+    var container = document.querySelector(".km-chips");
     container.innerHTML = "";
     state.chips = chips || [];
 
     chips.forEach(function (chip, idx) {
-      const btn = document.createElement("button");
+      var btn = document.createElement("button");
       btn.className = "km-chip";
       btn.style.animationDelay = (idx * 0.1) + "s";
       btn.textContent = (chip.icon || "") + " " + chip.text;
@@ -627,8 +663,8 @@
 
   // ── Send Message ───────────────────────────────────────────────
   function sendUserMessage() {
-    const input = document.querySelector(".km-input");
-    const text = input.value.trim();
+    var input = document.querySelector(".km-input");
+    var text = input.value.trim();
     if (!text || state.loading || state.ended) return;
     input.value = "";
     sendMessage(text);
@@ -660,7 +696,7 @@
       })
       .then(function (data) {
         hideTyping();
-        const result = data.message || data;
+        var result = data.message || data;
 
         addAIMessage(result.text || "I'm not sure how to respond to that.", result.cards);
         renderChips(result.chips || []);
@@ -689,34 +725,32 @@
   // ── Typing Indicator ──────────────────────────────────────────
   function showTyping() {
     state.loading = true;
-    const container = document.querySelector(".km-messages");
-    const typing = document.createElement("div");
+    var container = document.querySelector(".km-messages");
+    var typing = document.createElement("div");
     typing.className = "km-typing";
     typing.id = "km-typing";
-    typing.innerHTML = `
-      <div class="km-typing-dot"></div>
-      <div class="km-typing-dot"></div>
-      <div class="km-typing-dot"></div>
-    `;
+    typing.innerHTML =
+      '<div class="km-typing-dot"></div>' +
+      '<div class="km-typing-dot"></div>' +
+      '<div class="km-typing-dot"></div>';
     container.appendChild(typing);
     scrollToBottom();
   }
 
   function hideTyping() {
     state.loading = false;
-    const typing = document.getElementById("km-typing");
+    var typing = document.getElementById("km-typing");
     if (typing) typing.remove();
   }
 
   // ── Footer ─────────────────────────────────────────────────────
   function updateFooter() {
-    const footer = document.querySelector(".km-footer");
+    var footer = document.querySelector(".km-footer");
     if (!footer) return;
 
     if (state.ended) {
       footer.textContent = "Session ended — refresh to start a new one";
     } else if (state.messageCount > 0) {
-      const remaining = Math.max(0, state.maxMessages - state.messageCount);
       footer.textContent = state.messageCount + "/" + state.maxMessages + " questions";
     } else {
       footer.textContent = "Powered by Know Me";
@@ -725,14 +759,14 @@
 
   // ── Helpers ────────────────────────────────────────────────────
   function scrollToBottom() {
-    const container = document.querySelector(".km-messages");
+    var container = document.querySelector(".km-messages");
     if (container) {
       container.scrollTop = container.scrollHeight;
     }
   }
 
   function escapeHtml(str) {
-    const div = document.createElement("div");
+    var div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
   }
@@ -743,8 +777,12 @@
       console.warn("KnowMe widget: missing data-token or data-host on script tag");
       return;
     }
-    injectStyles();
-    createWidget();
+
+    // Fetch config from server, then build widget
+    fetchConfig().then(function () {
+      injectStyles();
+      createWidget();
+    });
   }
 
   if (document.readyState === "loading") {

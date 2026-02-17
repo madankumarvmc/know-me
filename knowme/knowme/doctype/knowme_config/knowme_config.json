@@ -19,8 +19,19 @@
   "section_widget",
   "accent_color",
   "max_messages",
+  "bot_name",
+  "suggested_chips",
+  "section_security",
+  "allowed_domains",
+  "section_quota",
+  "monthly_quota",
+  "current_month_usage",
+  "quota_reset_date",
   "section_knowledge",
-  "knowledge_spreadsheet_url"
+  "knowledge_spreadsheet_url",
+  "pipeline_delete_orphans",
+  "last_pipeline_sync",
+  "pipeline_sync_status"
  ],
  "fields": [
   {
@@ -105,20 +116,87 @@
    "label": "Max Messages Per Session"
   },
   {
+   "fieldname": "bot_name",
+   "fieldtype": "Data",
+   "label": "Bot Name",
+   "description": "Display name for the chatbot (defaults to tenant name)"
+  },
+  {
+   "fieldname": "suggested_chips",
+   "fieldtype": "Small Text",
+   "label": "Suggested Chips",
+   "description": "Comma-separated initial conversation starters (e.g. Tell me about yourself, What are your skills?, Show me your writing)"
+  },
+  {
+   "fieldname": "section_security",
+   "fieldtype": "Section Break",
+   "label": "Security"
+  },
+  {
+   "fieldname": "allowed_domains",
+   "fieldtype": "Small Text",
+   "label": "Allowed Domains",
+   "description": "Comma-separated origins that can use this token (e.g. https://example.com, https://www.example.com). Leave blank to allow all origins."
+  },
+  {
+   "fieldname": "section_quota",
+   "fieldtype": "Section Break",
+   "label": "Usage Quota"
+  },
+  {
+   "default": "0",
+   "fieldname": "monthly_quota",
+   "fieldtype": "Int",
+   "label": "Monthly Quota",
+   "description": "Maximum LLM calls per month (0 = unlimited)"
+  },
+  {
+   "default": "0",
+   "fieldname": "current_month_usage",
+   "fieldtype": "Int",
+   "label": "Current Month Usage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "quota_reset_date",
+   "fieldtype": "Date",
+   "label": "Quota Reset Date",
+   "read_only": 1
+  },
+  {
    "fieldname": "section_knowledge",
    "fieldtype": "Section Break",
-   "label": "Knowledge Pipeline (Phase 2)"
+   "label": "Knowledge Pipeline"
   },
   {
    "fieldname": "knowledge_spreadsheet_url",
    "fieldtype": "Data",
    "label": "Knowledge Spreadsheet URL",
-   "description": "Google Spreadsheet CSV URL for automated knowledge ingestion"
+   "description": "Google Spreadsheet published as CSV. Columns: topic, title, content, source_url"
+  },
+  {
+   "default": "0",
+   "fieldname": "pipeline_delete_orphans",
+   "fieldtype": "Check",
+   "label": "Delete Orphan Entries",
+   "description": "Remove Knowledge Entries not found in the spreadsheet during sync"
+  },
+  {
+   "fieldname": "last_pipeline_sync",
+   "fieldtype": "Datetime",
+   "label": "Last Pipeline Sync",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pipeline_sync_status",
+   "fieldtype": "Data",
+   "label": "Pipeline Sync Status",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2025-02-15 12:00:00.000000",
+ "modified": "2025-02-16 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "KnowMe",
  "name": "KnowMe Config",

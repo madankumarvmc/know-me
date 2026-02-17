@@ -57,7 +57,16 @@ def handle(**kwargs):
 			"meta": {"topic": "rate_limit", "isGoodbye": True, "remainingMessages": 0},
 		}
 
-	# 3. Parse request
+	# 3. Usage quota check
+	if _is_quota_exceeded(tenant_config):
+		return {
+			"text": "This assistant has reached its monthly usage limit. Please check back next month! 🙏",
+			"chips": [],
+			"cards": [],
+			"meta": {"topic": "quota_exceeded", "isGoodbye": True, "remainingMessages": 0},
+		}
+
+	# 4. Parse request
 	message = kwargs.get("message", "").strip()
 	session_id = kwargs.get("sessionId", "anonymous")
 	conversation_history = kwargs.get("conversationHistory", [])
@@ -66,7 +75,7 @@ def handle(**kwargs):
 	if not message:
 		frappe.throw("Message is required", frappe.ValidationError)
 
-	# 4. Check session message limit
+	# 5. Check session message limit
 	max_messages = tenant_config.max_messages or 18
 	remaining = max(0, max_messages - message_count)
 
@@ -78,7 +87,7 @@ def handle(**kwargs):
 			"meta": {"topic": "session_end", "isGoodbye": True, "remainingMessages": 0},
 		}
 
-	# 5. Run ADK agent
+	# 6. Run ADK agent
 	try:
 		result = run_agent(tenant_config, message, session_id, conversation_history)
 	except Exception as e:
@@ -95,7 +104,7 @@ def handle(**kwargs):
 			"meta": {"topic": "error"},
 		}
 
-	# 6. Add remaining messages to meta
+	# 7. Add remaining messages to meta
 	result.setdefault("meta", {})
 	result["meta"]["remainingMessages"] = remaining - 1
 	result["meta"]["isGoodbye"] = False
@@ -104,13 +113,18 @@ def handle(**kwargs):
 	if remaining <= 3:
 		result["meta"]["wrapUp"] = True
 
-	# 7. Log session asynchronously
+	# 8. Increment usage quota (atomic SQL update)
+	_increment_quota(tenant_config.name)
+
+	# 9. Log session with conversation log
 	frappe.enqueue(
 		_log_chat_session,
 		tenant=tenant_config.name,
 		session_id=session_id,
 		message_count=message_count + 1,
 		ip=ip,
+		user_message=message,
+		assistant_response=result.get("text", ""),
 		queue="short",
 	)
 
@@ -135,22 +149,73 @@ def _is_rate_limited(ip, tenant_name):
 	return session_count >= 10
 
 
-def _log_chat_session(tenant, session_id, message_count, ip):
-	"""Log or update chat session record."""
+def _is_quota_exceeded(tenant_config):
+	"""Check if tenant has exceeded monthly usage quota."""
+	monthly_quota = tenant_config.monthly_quota or 0
+	if monthly_quota <= 0:
+		return False  # No quota set = unlimited
+
+	current_usage = tenant_config.current_month_usage or 0
+	return current_usage >= monthly_quota
+
+
+def _increment_quota(tenant_name):
+	"""Atomically increment the monthly usage counter."""
+	frappe.db.sql(
+		"""UPDATE `tabKnowMe Config`
+		SET current_month_usage = COALESCE(current_month_usage, 0) + 1
+		WHERE name = %s""",
+		(tenant_name,),
+	)
+
+
+def _log_chat_session(tenant, session_id, message_count, ip, user_message="", assistant_response=""):
+	"""Log or update chat session record with conversation log."""
+	from datetime import datetime
+
 	existing = frappe.db.exists(
 		"Chat Session",
 		{"tenant": tenant, "session_id": session_id},
 	)
 
 	if existing:
-		frappe.db.set_value("Chat Session", existing, "message_count", message_count)
+		# Load existing conversation log and append
+		doc = frappe.get_doc("Chat Session", existing)
+		doc.flags.ignore_permissions = True
+
+		log = []
+		if doc.conversation_log:
+			try:
+				log = json.loads(doc.conversation_log)
+			except (json.JSONDecodeError, TypeError):
+				log = []
+
+		# Append user message and assistant response
+		timestamp = datetime.now().isoformat()
+		if user_message:
+			log.append({"role": "user", "content": user_message, "timestamp": timestamp})
+		if assistant_response:
+			log.append({"role": "assistant", "content": assistant_response, "timestamp": timestamp})
+
+		doc.message_count = message_count
+		doc.conversation_log = json.dumps(log)
+		doc.save(ignore_permissions=True)
 	else:
+		# Create new session with initial conversation log
+		timestamp = datetime.now().isoformat()
+		log = []
+		if user_message:
+			log.append({"role": "user", "content": user_message, "timestamp": timestamp})
+		if assistant_response:
+			log.append({"role": "assistant", "content": assistant_response, "timestamp": timestamp})
+
 		doc = frappe.get_doc({
 			"doctype": "Chat Session",
 			"tenant": tenant,
 			"session_id": session_id,
 			"message_count": message_count,
 			"visitor_ip": ip,
+			"conversation_log": json.dumps(log),
 		})
 		doc.insert(ignore_permissions=True)
 
