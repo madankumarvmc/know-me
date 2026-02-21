@@ -44,9 +44,11 @@ def _fetch_knowledge(tenant_name):
 def create_agent(tenant_config, knowledge_text):
 	"""Create an ADK agent for a specific tenant with pre-loaded knowledge."""
 	persona = tenant_config.persona_prompt or "You are a helpful AI assistant."
+	bot_name = tenant_config.bot_name or tenant_config.tenant_name
 
-	instruction = f"""You are a conversational AI representing {tenant_config.tenant_name}.
-{persona}
+	instruction = f"""{persona}
+
+Your name is {bot_name}.
 
 KNOWLEDGE BASE — Use ONLY this data to answer questions. NEVER fabricate facts:
 {knowledge_text}
@@ -55,9 +57,9 @@ RESPONSE FORMAT — respond ONLY with valid JSON (no markdown fences, no extra t
 {{
   "text": "Your response in 2-4 sentences. You can use <b>bold</b> and <i>italic</i> HTML.",
   "chips": [
-    {{"id": "chip_1", "text": "Suggested question", "icon": "emoji"}},
-    {{"id": "chip_2", "text": "Another suggestion", "icon": "emoji"}},
-    {{"id": "chip_3", "text": "Third option", "icon": "emoji"}}
+    {{"id": "chip_1", "text": "Suggested question", "icon": "\U0001f4ac"}},
+    {{"id": "chip_2", "text": "Another suggestion", "icon": "\u2728"}},
+    {{"id": "chip_3", "text": "Third option", "icon": "\U0001f680"}}
   ],
   "cards": [],
   "meta": {{"topic": "current_topic"}}
@@ -66,6 +68,7 @@ RESPONSE FORMAT — respond ONLY with valid JSON (no markdown fences, no extra t
 RULES:
 - Answer ONLY from the KNOWLEDGE BASE above. If not found, say so honestly.
 - Always provide 3-5 chips as conversation starters relevant to the knowledge base.
+- Chip icons MUST be single Unicode emoji characters (e.g. \U0001f4ac \u2728 \U0001f680 \u270d\ufe0f \U0001f4a1 \U0001f3a8 \u2764\ufe0f \U0001f4bb), NEVER text words like "star" or "factory".
 - Keep responses warm, engaging, and concise (2-4 sentences).
 - Adapt tone: professional for career questions, warm for personal questions, enthusiastic for interests.
 - When mentioning blog posts, include them as cards: {{"type": "blog_post", "title": "Post Title", "slug": "post-slug"}}
@@ -75,7 +78,7 @@ RULES:
 	return Agent(
 		name="knowme_agent",
 		model=tenant_config.llm_model or "gemini-2.0-flash",
-		description=f"AI assistant that helps visitors learn about {tenant_config.tenant_name}",
+		description=f"AI assistant for {bot_name}",
 		instruction=instruction,
 		tools=[],  # No tools needed — knowledge is pre-loaded in instruction
 	)

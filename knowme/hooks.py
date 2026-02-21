@@ -18,7 +18,4 @@ scheduler_events = {
 			"knowme.api.scheduled_tasks.reset_monthly_quotas"
 		],
 	},
-	"hourly": [
-		"knowme.api.knowledge_pipeline.run_pipeline"
-	],
 }

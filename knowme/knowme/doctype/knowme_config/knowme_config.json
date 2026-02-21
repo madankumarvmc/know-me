@@ -26,12 +26,7 @@
   "section_quota",
   "monthly_quota",
   "current_month_usage",
-  "quota_reset_date",
-  "section_knowledge",
-  "knowledge_spreadsheet_url",
-  "pipeline_delete_orphans",
-  "last_pipeline_sync",
-  "pipeline_sync_status"
+  "quota_reset_date"
  ],
  "fields": [
   {
@@ -162,41 +157,11 @@
    "fieldtype": "Date",
    "label": "Quota Reset Date",
    "read_only": 1
-  },
-  {
-   "fieldname": "section_knowledge",
-   "fieldtype": "Section Break",
-   "label": "Knowledge Pipeline"
-  },
-  {
-   "fieldname": "knowledge_spreadsheet_url",
-   "fieldtype": "Data",
-   "label": "Knowledge Spreadsheet URL",
-   "description": "Google Spreadsheet published as CSV. Columns: topic, title, content, source_url"
-  },
-  {
-   "default": "0",
-   "fieldname": "pipeline_delete_orphans",
-   "fieldtype": "Check",
-   "label": "Delete Orphan Entries",
-   "description": "Remove Knowledge Entries not found in the spreadsheet during sync"
-  },
-  {
-   "fieldname": "last_pipeline_sync",
-   "fieldtype": "Datetime",
-   "label": "Last Pipeline Sync",
-   "read_only": 1
-  },
-  {
-   "fieldname": "pipeline_sync_status",
-   "fieldtype": "Data",
-   "label": "Pipeline Sync Status",
-   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2025-02-16 12:00:00.000000",
+ "modified": "2025-02-18 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "KnowMe",
  "name": "KnowMe Config",
